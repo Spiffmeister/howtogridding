@@ -10,15 +10,11 @@ end
 
 
 
-"""
-    meshgrid(S,nx,ny)
-"""
-meshgrid(TT,cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Int,ny::Int) = meshgrid(Float64,cbottom,cleft,cright,ctop,TT,nx,ny)
+
 
 """
     meshgrid(S,TT,nx,ny)
 """
-
 function meshgrid(TT,cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Int,ny::Int)
     # TT = Float64
 
@@ -40,7 +36,10 @@ function meshgrid(TT,cbottom::Function,cleft::Function,cright::Function,ctop::Fu
     end
     return X,Y
 end
-
+"""
+    meshgrid(S,nx,ny)
+"""
+meshgrid(cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Int,ny::Int) = meshgrid(Float64,cbottom,cleft,cright,ctop,nx,ny)
 
 
 

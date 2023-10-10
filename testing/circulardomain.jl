@@ -8,16 +8,17 @@ Pkg.activate(".")
 using howtogridding
 
 
-uv = LinRange(0,1,10)
-
-
-theta(x,y) = atan(y/x)
-
 
 R = 1.0
-# sqtocirc = [cos(3π/4),sin(3π/4)] - [0.25,0.25]
+
+D = GenerateDomain_Circle(R,5,5)
+
+plt = plotgrid(D)
+plt
 
 
+
+#=
 # First build the full circle for plotting
 x = [R*cos(θ) for θ in 0:0.01:2π]
 y = [R*sin(θ) for θ in 0:0.01:2π]
@@ -34,14 +35,6 @@ squpper(u)  = [u/2 - 0.25,  0.25]
 sqleft(v)   = [-0.25,       v/2 - 0.25]
 sqright(v)  = [0.25,        v/2 - 0.25]
 sqbottom(u)    = [u/2 - 0.25,  -0.25]
-
-
-# The 45 degree lines
-sq45left(u) = [u/2 - 0.25,  u/2 - 0.25]
-sq45right(u)= [0.25 - u/2,  u/2 - 0.25]
-sq45top(u)  = [u/2 - 0.25,  0.25 - u/2]
-sq45bottom(u) = [u/2 - 0.25,  u/2 - 0.25]
-
 
 
 # Top annulus
@@ -109,6 +102,12 @@ Parameterise the section of a circles circumference with radius ``r`` and angle 
 function circlesection(x::Real,y::Real,r::Real,theta::Real)
     [x+r*cos(theta),y+r*sin(theta)]
 end
+=#
+
+
+
+
+
 
 
 

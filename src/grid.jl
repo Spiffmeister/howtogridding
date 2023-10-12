@@ -96,11 +96,15 @@ end
     Grid2D(𝒟x::Vector,𝒟y::Vector)
 Construct a 2D grid from vectors in ``x`` and ``y``.
 """
-function Grid2D(𝒟x::Vector{TT},𝒟y::Vector{TT}) where TT
-    X,Y = meshgrid(𝒟x,𝒟y)
+function Grid2D(𝒟x::Matrix{TT},𝒟y::Matrix{TT},order=2) where TT
+    # X,Y = meshgrid(𝒟x,𝒟y)
+
+    nx, ny = size(X)
 
     Δx = zeros(eltype(X),size(X))
     Δy = zeros(eltype(Y),size(Y))
+
+    nx,ny = size(𝒟x)
 
     for i = 1:size(X,1)-1
         Δx[i,:] = X[i,:] - X[i+1,:]
@@ -109,12 +113,27 @@ function Grid2D(𝒟x::Vector{TT},𝒟y::Vector{TT}) where TT
         Δy[:,j] = Y[:,j] - Y[:,j+1]
     end
 
+    # Δx = TT(1)/TT(nx)
+    # Δy = TT(1)/TT(ny)
+
     J = 1.0
+
+    qx = zeros(eltype(X),size(X))
+    rx = zeros(eltype(X),size(X))
+    qy = zeros(eltype(Y),size(Y))
+    ry = zeros(eltype(Y),size(Y))
+
+    D₁!(qx,𝒟x,nx,Δx,2,TT(0),1)
+    D₁!(qy,𝒟y,nx,Δy,2,TT(0),1)
+    D₁!(rx,𝒟x,ny,Δx,2,TT(0),2)
+    D₁!(ry,𝒟y,ny,Δy,2,TT(0),2)
+
+    # J = 1.0
     qx = qy = rx = ry = zeros(eltype(gx.grid),1)
-    return Grid2D{TT,CartesianMetric,typeof(gx.grid),typeof(gx.Δx)}(gx.grid, gy.grid, gx.Δx, gy.Δx, gx.n, gy.n,
+    return Grid2D{TT,CartesianMetric,typeof(gx.grid),typeof(gx.Δx)}(𝒟x, 𝒟y, Δx, Δy, nx, ny,
         J, qx, qy, rx, ry)
 
-    return Grid2D{TT,CurvilinearMetric,typeof(X),typeof(Δx)}(X,Y,Δx,Δy,length(𝒟x),length(𝒟y))
+    # return Grid2D{TT,CurvilinearMetric,typeof(X),typeof(Δx)}(X,Y,Δx,Δy,length(𝒟x),length(𝒟y))
 end
 """
     Grid2D(cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Integer,ny::Integer)

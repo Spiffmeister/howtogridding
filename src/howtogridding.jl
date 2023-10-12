@@ -3,6 +3,8 @@ module howtogridding
     using Plots
 
     include("types.jl")
+    include("DerivativeFirst.jl")
+    include("Op_Dx.jl")
     include("basis.jl")
     include("grid.jl")
     include("generating.jl")

@@ -19,3 +19,5 @@ const Right = NodeType{:Right,1}()
 const Up = NodeType{:Left,2}()
 const Down = NodeType{:Right,2}()
 
+
+struct DerivativeOrder{O} end

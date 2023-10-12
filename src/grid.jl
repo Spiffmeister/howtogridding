@@ -73,9 +73,9 @@ struct Grid2D{TT,
     nx      :: Integer
     ny      :: Integer
 
-    J       :: TT
+    J       :: GT
     qx      :: GT
-    qr      :: GT
+    qy      :: GT
     rx      :: GT
     ry      :: GT
 end
@@ -97,43 +97,46 @@ end
 Construct a 2D grid from vectors in ``x`` and ``y``.
 """
 function Grid2D(𝒟x::Matrix{TT},𝒟y::Matrix{TT},order=2) where TT
-    # X,Y = meshgrid(𝒟x,𝒟y)
 
-    nx, ny = size(X)
+    nx, ny = size(𝒟x)
 
-    Δx = zeros(eltype(X),size(X))
-    Δy = zeros(eltype(Y),size(Y))
+    Δx = zeros(eltype(𝒟x),size(𝒟x))
+    Δy = zeros(eltype(𝒟x),size(𝒟x))
 
-    nx,ny = size(𝒟x)
-
-    for i = 1:size(X,1)-1
-        Δx[i,:] = X[i,:] - X[i+1,:]
+    for i = 1:size(𝒟x,1)-1
+        Δx[i,:] = 𝒟x[i+1,:] - 𝒟x[i,:]
     end
-    for j = 1:size(Y,2)-1
-        Δy[:,j] = Y[:,j] - Y[:,j+1]
+    Δx[end,:] = Δx[end-1,:]
+    for j = 1:size(𝒟y,2)-1
+        Δy[:,j] = 𝒟y[:,j+1] - 𝒟y[:,j]
     end
+    Δy[:,end] = Δy[:,end-1]
 
-    # Δx = TT(1)/TT(nx)
-    # Δy = TT(1)/TT(ny)
+    # println(Δx)
 
-    J = 1.0
+    qx = zeros(eltype(𝒟x),size(𝒟x))
+    rx = zeros(eltype(𝒟x),size(𝒟x))
+    qy = zeros(eltype(𝒟y),size(𝒟y))
+    ry = zeros(eltype(𝒟y),size(𝒟y))
 
-    qx = zeros(eltype(X),size(X))
-    rx = zeros(eltype(X),size(X))
-    qy = zeros(eltype(Y),size(Y))
-    ry = zeros(eltype(Y),size(Y))
-
-    D₁!(qx,𝒟x,nx,Δx,2,TT(0),1)
-    D₁!(qy,𝒟y,nx,Δy,2,TT(0),1)
-    D₁!(rx,𝒟x,ny,Δx,2,TT(0),2)
-    D₁!(ry,𝒟y,ny,Δy,2,TT(0),2)
-
-    # J = 1.0
-    qx = qy = rx = ry = zeros(eltype(gx.grid),1)
-    return Grid2D{TT,CartesianMetric,typeof(gx.grid),typeof(gx.Δx)}(𝒟x, 𝒟y, Δx, Δy, nx, ny,
+    D₁!(qx,𝒟x,nx,1.0,DerivativeOrder{2}(),TT(0),1)
+    @. qx = qx/Δx
+    D₁!(qy,𝒟y,nx,1.0,DerivativeOrder{2}(),TT(0),1)
+    @. qy = qy/Δy
+    D₁!(rx,𝒟x,ny,1.0,DerivativeOrder{2}(),TT(0),2)
+    @. rx = rx/Δx
+    D₁!(ry,𝒟y,ny,1.0,DerivativeOrder{2}(),TT(0),2)
+    @. ry = ry/Δy
+    
+    J = zeros(eltype(𝒟x),size(𝒟x))
+    for i = 1:nx
+        for j = 1:ny
+            J[i,j] = 1/(qx[i,j]*ry[i,j] - rx[i,j]*qy[i,j])
+        end
+    end
+    
+    return Grid2D{TT,CurvilinearMetric,typeof(𝒟x),eltype(𝒟x)}(𝒟x, 𝒟y, TT(1)/TT(nx-1), TT(1)/TT(ny-1), nx, ny,
         J, qx, qy, rx, ry)
-
-    # return Grid2D{TT,CurvilinearMetric,typeof(X),typeof(Δx)}(X,Y,Δx,Δy,length(𝒟x),length(𝒟y))
 end
 """
     Grid2D(cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Integer,ny::Integer)
@@ -141,25 +144,9 @@ Construct a 2D grid from the boundary functions in ``x`` and ``y`` and the numbe
 
 Curves ``c`` are parameterised by ``u`` and ``v`` where ``u`` is the coordinate in the ``x`` direction and ``v`` is the coordinate in the ``y`` direction and where ``u`` and ``v`` are in the range ``[0,1]``.
 """
-function Grid2D(cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Integer,ny::Integer)
+function Grid2D(cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Integer,ny::Integer,order=2)
     X,Y = meshgrid(cbottom,cleft,cright,ctop,nx,ny)
-
-    dX = zeros(eltype(X),(nx,ny))
-    dY = zeros(eltype(Y),(nx,ny))
-
-    for i = 1:nx-1
-        dX[i,:] = X[i,:] - X[i+1,:]
-    end
-    for j = 1:ny-1
-        dY[:,j] = Y[:,j] - Y[:,j+1]
-    end
-
-    J = 1.0
-    qx = qy = rx = ry = zeros(eltype(gx.grid),1)
-    return Grid2D{TT,CartesianMetric,typeof(gx.grid),typeof(gx.Δx)}(gx.grid, gy.grid, gx.Δx, gy.Δx, gx.n, gy.n,
-        J, qx, qy, rx, ry)
-
-    return Grid2D{eltype(X),CurvilinearMetric,typeof(X),typeof(dX)}(X, Y, dX, dY, nx, ny)
+    Grid2D(X,Y,order)
 end
 
 

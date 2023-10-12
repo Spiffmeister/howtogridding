@@ -46,8 +46,7 @@ function D₁! end
     D₁!(uₓ::AbstractVector{T},u::AbstractVector{T},n::Integer,Δx::T,order::Integer)
 1D [`D₁!`](@ref).
 """
-function D₁!(uₓ::AbstractVector{T},u::AbstractVector{T},n::Integer,Δx::T,
-        order::DerivativeOrder,α::T) where T
+function D₁!(uₓ::AbstractVector{T},u::AbstractVector{T},n::Integer,Δx::T,order::DerivativeOrder,α::T) where T
     FirstDerivativeBoundary!(uₓ,u,Δx,n,Left,order,α)
     FirstDerivativeInternal!(uₓ,u,Δx,n,order,α)
     FirstDerivativeBoundary!(uₓ,u,Δx,n,Right,order,α)
@@ -56,9 +55,8 @@ end
     function D₁!(uₓ::AbstractArray{T},u::AbstractArray{T},n::Integer,Δ::T,order::Integer,dim::Integer)
 1D implementation for 2D problems for [`D₁!`](@ref).
 """
-function D₁!(uₓ::AbstractArray{T},u::AbstractArray{T},n::Integer,Δ::T,
-        order::DerivativeOrder,α::T,dim::Integer) where T
-    loopdir = SelectLoopDirection(dim)
+function D₁!(uₓ::AbstractArray{T},u::AbstractArray{T},n::Integer,Δ::T,order::DerivativeOrder,α::T,dim::Integer) where T
+    dim == 1 ? loopdir = eachcol : loopdir = eachrow
     for (cache,U) in zip(loopdir(uₓ),loopdir(u))
         D₁!(cache,U,n,Δ,order,α)
     end

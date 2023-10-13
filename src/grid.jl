@@ -94,46 +94,36 @@ function Grid2D(𝒟x::Vector{TT},𝒟y::Vector{TT},nx::Integer,ny::Integer) whe
 end
 """
     Grid2D(𝒟x::Vector,𝒟y::Vector)
-Construct a 2D grid from vectors in ``x`` and ``y``.
+Construct a 2D grid from vectors in ``x`` and ``y`` for curvilinear ``x,y``.
 """
 function Grid2D(𝒟x::Matrix{TT},𝒟y::Matrix{TT},order=2) where TT
 
     nx, ny = size(𝒟x)
 
-    Δx = zeros(eltype(𝒟x),size(𝒟x))
-    Δy = zeros(eltype(𝒟x),size(𝒟x))
+    Δx = TT(1)/TT(nx-1)
+    Δy = TT(1)/TT(ny-1)
 
-    for i = 1:size(𝒟x,1)-1
-        Δx[i,:] = 𝒟x[i+1,:] - 𝒟x[i,:]
-    end
-    Δx[end,:] = Δx[end-1,:]
-    for j = 1:size(𝒟y,2)-1
-        Δy[:,j] = 𝒟y[:,j+1] - 𝒟y[:,j]
-    end
-    Δy[:,end] = Δy[:,end-1]
+    xq = zeros(eltype(𝒟x),size(𝒟x))
+    xr = zeros(eltype(𝒟x),size(𝒟x))
+    yq = zeros(eltype(𝒟y),size(𝒟y))
+    yr = zeros(eltype(𝒟y),size(𝒟y))
 
-    # println(Δx)
-
-    qx = zeros(eltype(𝒟x),size(𝒟x))
-    rx = zeros(eltype(𝒟x),size(𝒟x))
-    qy = zeros(eltype(𝒟y),size(𝒟y))
-    ry = zeros(eltype(𝒟y),size(𝒟y))
-
-    D₁!(qx,𝒟x,nx,1.0,DerivativeOrder{2}(),TT(0),1)
-    @. qx = qx/Δx
-    D₁!(qy,𝒟y,nx,1.0,DerivativeOrder{2}(),TT(0),1)
-    @. qy = qy/Δy
-    D₁!(rx,𝒟x,ny,1.0,DerivativeOrder{2}(),TT(0),2)
-    @. rx = rx/Δx
-    D₁!(ry,𝒟y,ny,1.0,DerivativeOrder{2}(),TT(0),2)
-    @. ry = ry/Δy
+    D₁!(xq,𝒟x,nx,TT(1)/TT(nx-1),DerivativeOrder{2}(),TT(0),1)
+    D₁!(yq,𝒟y,nx,TT(1)/TT(nx-1),DerivativeOrder{2}(),TT(0),1)
+    D₁!(xr,𝒟x,ny,TT(1)/TT(ny-1),DerivativeOrder{2}(),TT(0),2)
+    D₁!(yr,𝒟y,ny,TT(1)/TT(ny-1),DerivativeOrder{2}(),TT(0),2)
     
     J = zeros(eltype(𝒟x),size(𝒟x))
     for i = 1:nx
         for j = 1:ny
-            J[i,j] = 1/(qx[i,j]*ry[i,j] - rx[i,j]*qy[i,j])
+            J[i,j] = (xq[i,j]*yr[i,j] - xr[i,j]*yq[i,j])
         end
     end
+
+    qx = yr./J # yr -> qx
+    qy = -xr./J # xr -> qy
+    rx = -yq./J # yr -> rx
+    ry = xq./J # xq -> ry
     
     return Grid2D{TT,CurvilinearMetric,typeof(𝒟x),eltype(𝒟x)}(𝒟x, 𝒟y, TT(1)/TT(nx-1), TT(1)/TT(ny-1), nx, ny,
         J, qx, qy, rx, ry)

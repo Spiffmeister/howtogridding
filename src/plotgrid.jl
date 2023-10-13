@@ -8,3 +8,8 @@ function plotgrid(G::GridMultiBlock)
     return plt
 end
 
+
+function plotgrid(G::Grid2D)
+    plt = scatter(G.gridx[:],G.gridy[:],color=:black)
+    return plt
+end

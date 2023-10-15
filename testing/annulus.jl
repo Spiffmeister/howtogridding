@@ -20,8 +20,8 @@ Rout = [6e-1]
 Zout = [-6e-1]
 
 
-Rin = [5e-1]
-Zin = [-5e-1]
+Rin = [3e-1]
+Zin = [-3e-1]
 
 
 outer = Torus(Rout,Zout,[1],[0])
@@ -148,7 +148,7 @@ outer = Torus(RbcOut,ZbsOut,m,n)
 inner = Torus(RbcIn,ZbsIn,m,n)
 
 
-X,Y = meshgrid(inner,outer,0.0,21,5)
+X,Y = meshgrid(inner,outer,0.0,11,3)
 
 
 RZout = hcat(outer.(θ,π/6)...)
@@ -161,6 +161,6 @@ scatter!(X[:],Y[:])
 
 
 
-Grid2D(X,Y)
+D = Grid2D(X,Y)
 
 

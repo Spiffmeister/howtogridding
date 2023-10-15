@@ -87,8 +87,8 @@ function Grid2D(𝒟x::Vector{TT},𝒟y::Vector{TT},nx::Integer,ny::Integer) whe
     gx = Grid1D(𝒟x,nx)
     gy = Grid1D(𝒟y,ny)
 
-    J = 1.0
-    qx = qy = rx = ry = zeros(eltype(gx.grid),1)
+    # J = 1.0
+    J = qx = qy = rx = ry = zeros(eltype(gx.grid),1)
     return Grid2D{TT,CartesianMetric,typeof(gx.grid),typeof(gx.Δx)}(gx.grid, gy.grid, gx.Δx, gy.Δx, gx.n, gy.n,
         J, qx, qy, rx, ry)
 end

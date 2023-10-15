@@ -5,6 +5,13 @@ using howtogridding
 using LinearAlgebra
 using Test
 
+
+
+D = Grid2D([0.0,1.0],[0.0,1.0],5,5) 
+
+
+
+
 xy = collect(LinRange(0.0,1.0,5))
 
 X,Y = meshgrid(xy,xy)
@@ -16,7 +23,7 @@ D = Grid2D(X,Y)
 @test repeat(collect(0.0:0.25:1.0),outer=(1,5)) == D.gridx
 @test repeat(collect(0.0:0.25:1.0),outer=(1,5))' == D.gridy
 
-
+# @test zeros(size(D))
 
 
 
@@ -47,4 +54,4 @@ ctop(u) = [u,1.0-u/2]
 
 D = Grid2D(cbottom,cleft,cright,ctop,5,5)
 
-
+# plotgrid(D)

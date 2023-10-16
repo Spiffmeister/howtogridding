@@ -12,6 +12,7 @@ module howtogridding
     include("plotgrid.jl")
 
     export Grid1D, Grid2D, GridMultiBlock
+    export Joint
     export meshgrid
     export Up, Down, Left, Right, Internal
 

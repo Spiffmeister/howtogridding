@@ -63,13 +63,12 @@ Returns:
 """
 struct Grid2D{TT,
         MET<:MetricType,
-        GT<:AbstractArray{TT},
-        DT<:Union{Real,AbstractArray{TT}}
+        GT<:AbstractArray{TT}
             } <: LocalGridType{TT,2,MET}
     gridx   :: GT
     gridy   :: GT
-    Δx      :: DT
-    Δy      :: DT
+    Δx      :: TT
+    Δy      :: TT
     nx      :: Integer
     ny      :: Integer
 
@@ -87,32 +86,56 @@ function Grid2D(𝒟x::Vector{TT},𝒟y::Vector{TT},nx::Integer,ny::Integer) whe
     gx = Grid1D(𝒟x,nx)
     gy = Grid1D(𝒟y,ny)
 
-    # J = 1.0
-    J = qx = qy = rx = ry = zeros(eltype(gx.grid),1)
-    return Grid2D{TT,CartesianMetric,typeof(gx.grid),typeof(gx.Δx)}(gx.grid, gy.grid, gx.Δx, gy.Δx, gx.n, gy.n,
+    X = repeat(gx.grid,1,ny)
+    Y = repeat(gy.grid',nx,1)
+
+    J = qx = qy = rx = ry = zeros(eltype(gx.grid),(1,1))
+
+    return Grid2D{TT,CartesianMetric,typeof(X),typeof(gx.Δx)}(X, Y, gx.Δx, gy.Δx, gx.n, gy.n,
         J, qx, qy, rx, ry)
 end
 """
     Grid2D(𝒟x::Vector,𝒟y::Vector)
 Construct a 2D grid from vectors in ``x`` and ``y`` for curvilinear ``x,y``.
 """
-function Grid2D(𝒟x::Matrix{TT},𝒟y::Matrix{TT},order=2) where TT
-
+function Grid2D(𝒟x::Matrix{TT},𝒟y::Matrix{TT};order=nothing,periodicx=false,periodicy=false) where TT
+    
     nx, ny = size(𝒟x)
-
     Δx = TT(1)/TT(nx-1)
     Δy = TT(1)/TT(ny-1)
+    
+    if isnothing(order)
+        if (nx ≥ 16) & (ny ≥ 16)
+            order = 4
+        else
+            order = 2
+        end
+    end
 
     xq = zeros(eltype(𝒟x),size(𝒟x))
     xr = zeros(eltype(𝒟x),size(𝒟x))
     yq = zeros(eltype(𝒟y),size(𝒟y))
     yr = zeros(eltype(𝒟y),size(𝒟y))
 
-    D₁!(xq,𝒟x,nx,TT(1)/TT(nx-1),DerivativeOrder{2}(),TT(0),1)
-    D₁!(yq,𝒟y,nx,TT(1)/TT(nx-1),DerivativeOrder{2}(),TT(0),1)
-    D₁!(xr,𝒟x,ny,TT(1)/TT(ny-1),DerivativeOrder{2}(),TT(0),2)
-    D₁!(yr,𝒟y,ny,TT(1)/TT(ny-1),DerivativeOrder{2}(),TT(0),2)
+    # Derivatives of x,y wrt q
+    if periodicx
+        PeriodicD₁!(xq,𝒟x,nx,Δx,order,1)
+        PeriodicD₁!(yq,𝒟y,nx,Δx,order,1)
+    else
+        D₁!(xq,𝒟x,nx,Δx,order,1)
+        D₁!(yq,𝒟y,nx,Δx,order,1)
+    end
     
+    # Derivatives of x,y wrt r
+    if periodicy
+        PeriodicD₁!(xr,𝒟x,ny,Δy,order,2)
+        PeriodicD₁!(yr,𝒟y,ny,Δy,order,2)
+    else
+        D₁!(xr,𝒟x,ny,Δy,order,2)
+        D₁!(yr,𝒟y,ny,Δy,order,2)
+    end
+
+    # Jacobian
     J = zeros(eltype(𝒟x),size(𝒟x))
     for i = 1:nx
         for j = 1:ny
@@ -120,12 +143,13 @@ function Grid2D(𝒟x::Matrix{TT},𝒟y::Matrix{TT},order=2) where TT
         end
     end
 
+    # Computational coordinate derivatives
     qx = yr./J # yr -> qx
     qy = -xr./J # xr -> qy
     rx = -yq./J # yr -> rx
     ry = xq./J # xq -> ry
     
-    return Grid2D{TT,CurvilinearMetric,typeof(𝒟x),eltype(𝒟x)}(𝒟x, 𝒟y, TT(1)/TT(nx-1), TT(1)/TT(ny-1), nx, ny,
+    return Grid2D{TT,CurvilinearMetric,typeof(𝒟x)}(𝒟x, 𝒟y, TT(1)/TT(nx-1), TT(1)/TT(ny-1), nx, ny,
         J, qx, qy, rx, ry)
 end
 """
@@ -136,7 +160,7 @@ Curves ``c`` are parameterised by ``u`` and ``v`` where ``u`` is the coordinate 
 """
 function Grid2D(cbottom::Function,cleft::Function,cright::Function,ctop::Function,nx::Integer,ny::Integer,order=2)
     X,Y = meshgrid(cbottom,cleft,cright,ctop,nx,ny)
-    Grid2D(X,Y,order)
+    Grid2D(X,Y;order=order)
 end
 
 
@@ -147,6 +171,8 @@ struct Joint
     index   :: Int64
     side    :: NodeType
 end
+
+
 
 
 """
@@ -201,16 +227,15 @@ function GridMultiBlock(grids::LocalGridType{TT,1,MET}...) where {TT,MET}
 end
 """
     GridMultiBlock(grids::Tuple{Vararg{Grid2D{TT,MET},N}}) where {N,TT,MET}
-Multiblock grid for 2D grids, assumes the grids are stacked in X
+Multiblock grid for 2D grids
 """
-function GridMultiBlock(grids::Tuple{Vararg{Grid2D{TT,GT,DT,MET},N}},joints) where {N,TT,GT,DT,MET}
+function GridMultiBlock(grids::Tuple{Vararg{Grid2D{TT,MET,GT},N}},joints) where {N,TT,GT,MET}
     inds = [sum([grids[j].nx] for j in 1:i) for i in 1:length(grids)]
     return GridMultiBlock{TT,2, MET,typeof(grids),typeof(joints),typeof(inds)}(grids,joints,inds,length(inds))
 end
 
 
-
-#============ Functions ============#
+#============ Methods ============#
 
 """
     GetMinΔ
@@ -228,7 +253,10 @@ GetMinΔ(grid::Grid2D) = min(grid.Δx,grid.Δy)
     Base.getindex(G::GridType,i::Integer)
 """
 Base.getindex(G::Grid1D,i...) = G.grid[i...]
-Base.getindex(G::Grid2D,i::Integer,j::Integer) = (G.gridx[i],G.gridy[j])
+Base.getindex(G::Grid2D,i::Integer,j::Integer) = (G.gridx[i,j],G.gridy[i,j])
+Base.getindex(G::Grid2D{TT},i::Integer) where TT = (G.gridx[i],G.gridy[i])
+
+
 
 function Base.getindex(G::GridMultiBlock{TT,1},i::Integer) where TT
     ii = findfirst(x->x ≥ i, G.inds)
@@ -291,3 +319,9 @@ Base.lastindex(G::Grid2D) = size(G)
     Base.lastindex(G::GridMultiBlock)
 """
 Base.eltype(G::GridType{TT}) where TT = TT
+
+
+"""
+    coordtype(G::GridType{TT,DIM,MET}) where {TT,DIM,MET}
+"""
+coordtype(G::GridType{TT,DIM,MET}) where {TT,DIM,MET} = MET

@@ -27,8 +27,8 @@ function GenerateDomain_Circle(R::Real,nx::Int,ny::Int)
     # squpper(u)  = [u*(sq_corner + sq_corner) - sq_corner,  sq_corner]
 
 
-    squ = collect(range(-sq_corner,sq_corner,length=nx))
-    sqv = collect(range(-sq_corner,sq_corner,length=ny))
+    squ = repeat(collect(range(-sq_corner,sq_corner,length=nx)),1,ny)
+    sqv = repeat(collect(range(-sq_corner,sq_corner,length=ny))',nx,1)
     sq = Grid2D(squ,sqv)
 
 

@@ -1,4 +1,4 @@
-
+using Plots
 using Pkg
 Pkg.activate(".")
 using howtogridding
@@ -7,6 +7,8 @@ using howtogridding
 function cbottom(u)
     x = u
     u ≤ 0.5 ? y = -u : y = u-1
+    # y = -u
+    y = (u-1)^3
     return [x,y]
 end
 
@@ -15,13 +17,15 @@ cleft(v) = [0.0,v]
 function ctop(u)
     x = u
     u ≤ 0.5 ? y = 1-u : y = u
+    # y = 1-u
+    y = (u-1)^3
     return [x,y]
 end
 
 cright(v) = [1.0,v]
 
 
-X,Y = meshgrid(cbottom,cleft,cright,ctop,10,10)
+X,Y = meshgrid(cbottom,cleft,cright,ctop,11,11)
 
 
 using Plots
